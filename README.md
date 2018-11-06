@@ -16,7 +16,7 @@ Advanced Rest Client, POSTMAN or similar API testing application for REST API se
 
 ### Instructions
 
-To run this solution, clone this repository to your local desktop and open the .sln file in Visual Studio 2017.
+To run this solution, clone this repository (https://github.com/mikecolline/maze) to your local desktop and open the .sln file in Visual Studio 2017.
 
 Press F5 to run and debug the solution.
 
