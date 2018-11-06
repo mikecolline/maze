@@ -1,6 +1,6 @@
 # Solve a Maze
 
-This application will take a maze string and display the most effient path to the destination
+This application will take a maze string and display the most efficient path to the destination
 
 ## Getting Started
 
@@ -11,6 +11,7 @@ These instructions will get you a copy of the project up and running on your loc
 What things you need to install the software and how to install them
 
 Visual Studio 2017
+
 Advanced Rest Client, POSTMAN or similar API testing application for REST API services
 
 ### Instructions
