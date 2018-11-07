@@ -13,7 +13,7 @@ namespace MazeApi.BL
                         new int[] { 1, 0 } };
 
         string myMap = string.Empty;
-        int[][] solution;
+        
 
         public MazeModel SolveMaze(string maze)
         {
@@ -40,6 +40,12 @@ namespace MazeApi.BL
             }
 
             //var test = myMoves;
+
+            if (myMap.Length == 0)
+            {
+                myMap = "No Solution";
+                myMoves = 0;
+            }
             return new MazeModel { steps = myMoves, solution = myMap };
         }
 
@@ -89,7 +95,6 @@ namespace MazeApi.BL
                         else if (testValue == -3)
                         {
 
-
                             if (count + 1 < lowest)
                             {
                                 lowest = count + 1;
@@ -103,7 +108,7 @@ namespace MazeApi.BL
             }
             return -1;
         }
-
+         
 
         private int[][] GetMazeArray(string maze)
         {
@@ -146,7 +151,7 @@ namespace MazeApi.BL
 
         {
             // Loop over int data and display as characters.
-            StringBuilder myMap = new StringBuilder();
+            StringBuilder solutionMap = new StringBuilder();
 
             for (int i = 0; i < array.Length; i++)
             {
@@ -157,19 +162,19 @@ namespace MazeApi.BL
                     switch (row[x])
                     {
                         case -1:
-                            myMap.Append('#');
+                            solutionMap.Append('#');
                             break;
                         case 1:
-                            myMap.Append('A');
+                            solutionMap.Append('A');
                             break;
                         case -3:
-                            myMap.Append('B');
+                            solutionMap.Append('B');
                             break;
                         case 0:
-                            myMap.Append('.');
+                            solutionMap.Append('.');
                             break;
                         default:
-                            myMap.Append('@');
+                            solutionMap.Append('@');
 
                             break;
 
@@ -177,9 +182,9 @@ namespace MazeApi.BL
 
                 }
 
-                myMap.Append(new char[] { '\n', '\r' });
+                solutionMap.Append(new char[] { '\n', '\r' });
             }
-            return myMap.ToString();
+            return solutionMap.ToString();
         }
 
     }
