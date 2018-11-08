@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
 using System;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 
 namespace MazeApi.Controllers
 {
-    [Route("[controller]/[action]")]
     public class MazeApiController : Controller
     {
         public MazeApiController()
@@ -15,19 +15,6 @@ namespace MazeApi.Controllers
         [HttpPost]
         public ActionResult solveMaze([FromBody] string maze)
         {
-
-            if (maze == null)
-            {
-                ModelState.AddModelError("Error", "Puzzle to solve is null");
-                return BadRequest(ModelState);
-
-            }
-
-            if (!(maze.Contains("A") && maze.Contains("B")))
-            {
-                ModelState.AddModelError("Error", "Need both a start and end to solve puzzle");
-                return BadRequest(ModelState);
-            }
 
             try
             {
@@ -43,8 +30,5 @@ namespace MazeApi.Controllers
             }
 
         }
-         
-
-
     }
 }

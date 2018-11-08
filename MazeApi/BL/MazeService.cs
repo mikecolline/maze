@@ -1,191 +1,302 @@
-﻿using MazeApi.Models;
+﻿using MazeApi.Common;
 using System;
-using System.Text;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
 
 namespace MazeApi.BL
 {
     public class MazeService
     {
-        int[][] _moves = {
-                        new int[] { -1, 0 },
-                        new int[] { 0, -1 },
-                        new int[] { 0, 1 },
-                        new int[] { 1, 0 } };
+        private string startCharacter, endCharacter, spaceCharacter, solutionPathCharacter, wallCharacter;
+        private long[,] mazeArray;
+        private long rowCount = 0;
+        private long columnLength = 0;
+        private Position startPosition;
+        private Position endPosition;
 
-        string myMap = string.Empty;
-        
-
-        public MazeModel SolveMaze(string maze)
+        public MazeSolution SolveMaze(string rawMazeString, string solutionPathCharacter = "@", string wallDelimiter = "#", string spaceDelimiter = ".", string startCharacter = "A", string endCharacter = "B")
         {
+            this.startCharacter = startCharacter;
+            this.endCharacter = endCharacter;
+            this.spaceCharacter = spaceDelimiter;
+            this.solutionPathCharacter = solutionPathCharacter;
+            this.wallCharacter = wallDelimiter;
 
-            var array = GetMazeArray(maze);
-            var myMoves = 0;
+            var startDate = DateTime.Now;
 
+            ValidateMazeString(rawMazeString);
+            ConvertMazeToTo2DArray(rawMazeString);
 
-            for (int i = 0; i < array.Length; i++)
+            CountAllSpacesDistanceFromStartPosition();
+
+            var numberOfStepsToSolution = mazeArray[endPosition.X, endPosition.Y] - 1;
+            if (numberOfStepsToSolution < 1)
             {
-                var row = array[i];
-
-                for (int x = 0; x < row.Length; x++)
-                {
-                    // Start square is here.
-                    if (row[x] == 1)
-                    {
-                        int lowest = int.MaxValue;
-                        Move(array, i, x, 0, ref lowest);
-
-                        myMoves = lowest;
-                    }
-                }
+                throw new MazeException("Unable to solve this maze");
             }
 
-            //var test = myMoves;
+            WalkTheMazeBackward();
 
-            if (myMap.Length == 0)
-            {
-                myMap = "No Solution";
-                myMoves = 0;
-            }
-            return new MazeModel { steps = myMoves, solution = myMap };
+            var resultString = ConvertMazeBackToAString();
+
+            var timeToSolve = DateTime.Now - startDate;
+
+            return new MazeSolution() { SecondsToSolve = timeToSolve.TotalSeconds, MazeSolutionString = resultString, StepCount = numberOfStepsToSolution };
         }
 
-        private bool IsValidPos(int[][] array, int row, int newRow, int newColumn)
+        private string ConvertMazeBackToAString()
         {
-            if (newRow < 0) return false;
-            if (newColumn < 0) return false;
-            if (newRow >= array.Length) return false;
-            if (newColumn >= array[row].Length) return false;
+            string result = "";
 
-            return true;
-        }
-        private int Move(int[][] arrayTemp, int rowIndex, int columnIndex, int count, ref int lowest)
-        {
-            // Copy map so we can modify it and then abandon it.
-            int[][] array = new int[arrayTemp.Length][];
-
-            for (int i = 0; i < arrayTemp.Length; i++)
+            for (var r = 0; r < rowCount; r++)
             {
-                var row = arrayTemp[i];
-                array[i] = new int[row.Length];
-                for (int x = 0; x < row.Length; x++)
+                for (var c = 0; c < columnLength; c++)
                 {
-                    array[i][x] = row[x];
-                }
-            }
+                    var value = mazeArray[r, c];
+                    var character = "";
 
-            int value = array[rowIndex][columnIndex];
-
-            if (value >= 1)
-            {
-                // Try all moves.
-                foreach (var movePair in _moves)
-                {
-                    int newRow = rowIndex + movePair[0];
-                    int newColumn = columnIndex + movePair[1];
-                    if (IsValidPos(array, rowIndex, newRow, newColumn))
+                    switch (value)
                     {
-                        int testValue = array[newRow][newColumn];
-                        if (testValue == 0)
-                        {
-                            array[newRow][newColumn] = value + 1;
-
-                            // Try another move.
-                            Move(array, newRow, newColumn, count + 1, ref lowest);
-                        }
-                        else if (testValue == -3)
-                        {
-
-                            if (count + 1 < lowest)
-                            {
-                                lowest = count + 1;
-                                myMap = CreateSolution(array);
-
-                            }
-                            return 1;
-                        }
-                    }
-                }
-            }
-            return -1;
-        }
-         
-
-        private int[][] GetMazeArray(string maze)
-        {
-            string[] lines = maze.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-
-            // Create array.
-            int[][] array = new int[lines.Length][];
-
-            for (int i = 0; i < lines.Length; i++)
-            {
-                string line = lines[i];
-                var row = new int[line.Length];
-
-                for (int x = 0; x < line.Length; x++)
-                {
-                    switch (line[x])
-                    {
-                        case '#':
-                            row[x] = -1;
+                        case 0:
+                            character = spaceCharacter;
                             break;
-                        case 'A':
-                            row[x] = 1;
-                            break;
-                        case 'B':
-                            row[x] = -3;
-                            break;
-                        default:
-                            row[x] = 0;
-                            break;
-                    }
-                }
-                array[i] = row;
-            }
-            return array;
-        }
-
-
-        // disply path
-        private string CreateSolution(int[][] array)
-
-        {
-            // Loop over int data and display as characters.
-            StringBuilder solutionMap = new StringBuilder();
-
-            for (int i = 0; i < array.Length; i++)
-            {
-                var row = array[i];
-
-                for (int x = 0; x < row.Length; x++)
-                {
-                    switch (row[x])
-                    {
                         case -1:
-                            solutionMap.Append('#');
+                            character = wallCharacter;
+                            break;
+                        case -2:
+                            character = endCharacter;
                             break;
                         case 1:
-                            solutionMap.Append('A');
+                            character = startCharacter;
                             break;
-                        case -3:
-                            solutionMap.Append('B');
-                            break;
-                        case 0:
-                            solutionMap.Append('.');
+                        case -5:
+                            character = solutionPathCharacter;
                             break;
                         default:
-                            solutionMap.Append('@');
-
+                            character = spaceCharacter;
                             break;
-
                     }
+
+                    result += character;
 
                 }
 
-                solutionMap.Append(new char[] { '\n', '\r' });
+                if (r < rowCount - 1)
+                    result += "\n";
             }
-            return solutionMap.ToString();
+
+            return result;
         }
 
+        private void WalkTheMazeBackward()
+        {
+            var currentPosition = endPosition;
+
+            while (true)
+            {
+                if (currentPosition == null)
+                {
+                    break;
+                }
+
+                var currentValue = mazeArray[currentPosition.X, currentPosition.Y];
+                var amFinished = currentValue == 1;
+
+                mazeArray[currentPosition.X, currentPosition.Y] = -5;
+
+                if (amFinished)
+                {
+                    break;
+                }
+
+                currentPosition = FindNeighborBasedOnItsValue(currentPosition.X, currentPosition.Y, currentValue - 1);
+            }
+
+            //Reset the start and end
+            mazeArray[startPosition.X, startPosition.Y] = 1;
+            mazeArray[endPosition.X, endPosition.Y] = -2;
+        }
+
+        private void CountAllSpacesDistanceFromStartPosition()
+        {
+            Queue<Position> positionsToWork = new Queue<Position>();
+            positionsToWork.Enqueue(startPosition);
+
+            while (positionsToWork.Count > 0)
+            {
+                var currentPosition = positionsToWork.Dequeue();
+                if (currentPosition.X == endPosition.X && currentPosition.Y == endPosition.Y)
+                {
+                    break;
+                }
+
+                var currentPositionValue = mazeArray[currentPosition.X, currentPosition.Y];
+                var moves = GetPotentialMoves(currentPosition.X, currentPosition.Y);
+
+                foreach (var move in moves)
+                {
+                    positionsToWork.Enqueue(move);
+                    mazeArray[move.X, move.Y] = currentPositionValue + 1;
+                }
+            }
+
+            
+        }
+
+        private List<Position> GetPotentialMoves(long fromX, long fromY)
+        {
+            List<Position> result = new List<Position>();
+            var directions = new string[] { "north", "south", "east", "west" };
+
+            foreach (var direction in directions)
+            {
+                var position = GetPotentialMove(fromX, fromY, direction);
+                if (position != null)
+                {
+                    result.Add(position);
+                }
+            }
+
+            return result;
+        }
+
+        private Position GetPotentialMove(long fromX, long fromY, string direction)
+        {
+            long toX = fromX;
+            long toY = fromY;
+
+            switch (direction)
+            {
+                case "north":
+                    toX = fromX - 1;
+                    break;
+                case "south":
+                    toX = fromX + 1;
+                    break;
+                case "east":
+                    toY = fromY + 1;
+                    break;
+                case "west":
+                    toY = fromY - 1;
+                    break;
+                default:
+                    throw new MazeException($"Method 'CountUpFromStartNeighroingPosition'.  Don't know what to do with direction '${direction}'");
+                    //break;
+            }
+
+            if (toX < 0 || toY < 0 || toX >= rowCount || toY >= columnLength)
+            {
+                return null;
+            }
+
+            //If the neighboring position is a 'WALL' or is NOT 0 and still less than 'ME', don't update it because
+            //it's part of a shorter path
+            var value = mazeArray[toX, toY];
+            if (value != 0 && value != -2)
+            {
+                return null;
+            }
+
+            return new Position() { X = toX, Y = toY };
+        }
+
+        private void ConvertMazeToTo2DArray(string mazeString)
+        {
+            var lineArray = mazeString.Replace("\r", "").Split('\n');
+
+            columnLength = lineArray[0].Length;
+            rowCount = lineArray.Length;
+
+            mazeArray = new long[rowCount, columnLength];
+            for (var row = 0; row < rowCount; row++)
+            {
+                string line = lineArray[row];
+
+                for (var column = 0; column < columnLength; column++)
+                {
+                    int value = 0;
+                    string charString = line.Substring(column, 1).Replace(wallCharacter, "-1").Replace(startCharacter, "1").Replace(endCharacter, "-2").Replace(spaceCharacter, "0");
+
+                    if (charString != "\r")
+                    {
+                        var isNumeric = int.TryParse(charString, out value);
+                        if (!isNumeric)
+                        {
+                            throw new MazeException($"'{charString}' is not a valid character in a maze.  Position ({row}, {column})");
+                        }
+
+                        mazeArray[row, column] = value;
+
+                        if (value == 1)
+                        {
+                            startPosition = new Position() { X = row, Y = column };
+                        }
+
+                        if (value == -2)
+                        {
+                            endPosition = new Position() { X = row, Y = column };
+                        }
+                    }
+                }
+            }
+        }
+
+        private void ValidateMazeString(string mazeString)
+        {
+            if (string.IsNullOrEmpty(mazeString))
+            {
+                throw new MazeException("mazeString provided is null");
+            }
+
+            var charCount = mazeString.Count(j => j == startCharacter.ToCharArray()[0]);
+
+            if (charCount != 1)
+            {
+                var msg = charCount == 0 ? "No start position specified in maze" : "Too many start position chars!";
+                throw new MazeException(msg);
+            }
+
+            charCount = mazeString.Count(j => j == endCharacter.ToCharArray()[0]);
+
+            if (charCount != 1)
+            {
+                var msg = charCount == 0 ? "No end position specified in maze" : "Too many end position chars!";
+                throw new MazeException(msg);
+            }
+
+            if (mazeString.Count(j => j == spaceCharacter.ToCharArray()[0]) == 0 || mazeString.Count(j => j == wallCharacter.ToCharArray()[0]) == 0)
+            {
+                throw new MazeException("mazeString provided doesn't appear to be a Maze?");
+            }
+
+        }
+
+        private Position FindNeighborBasedOnItsValue(long fromX, long fromY, long lookForValue)
+        {
+            var north = new Position() { X = fromX - 1, Y = fromY };
+            var south = new Position() { X = fromX + 1, Y = fromY };
+            var east = new Position() { X = fromX, Y = fromY + 1 };
+            var west = new Position() { X = fromX, Y = fromY - 1 };
+
+            var directions = new[] { north, south, east, west };
+            foreach (var direction in directions)
+            {
+                try
+                {
+                    var value = mazeArray[direction.X, direction.Y];
+                    if (value == lookForValue)
+                    {
+                        return direction;
+                    }
+                }
+                catch { }
+            };
+
+            return null;
+        }
+
+       
     }
 }
